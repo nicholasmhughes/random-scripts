@@ -3,6 +3,7 @@
 from optparse import OptionParser
 import csv
 import json
+import re
 import sys
 
 parser = OptionParser()
@@ -13,7 +14,9 @@ options, arguments = parser.parse_args()
 infile = sys.stdin
 jsonfile = sys.stdout
 
-if options.filetype == "cidr_block":
+if options.filetype == "blocklist":
+    fieldnames = ["ip_address","service","last_attack"]
+elif options.filetype == "cidr_block":
     fieldnames = ["cidr_block"]
 elif options.filetype == "domain":
     fieldnames = ["domain"]
@@ -28,7 +31,13 @@ elif options.filetype == "url":
 else:
     fieldnames = ["ip_address"]
 
-if options.filetype == "malware_domain":
+if options.filetype == "blocklist":
+    for row in infile:
+        newrow = re.search(r'^(\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})(?:\:.*Service: ([\w\-]+), Last-Attack: (\d+))?', row)
+        if newrow:
+            json.dump(dict(zip(fieldnames, newrow.groups())), jsonfile)
+            jsonfile.write('\n')
+elif options.filetype == "malware_domain":
     for row in infile:
         if not row.startswith('#') and not row == '':
             row = row.strip().split('\t')
