@@ -107,6 +107,35 @@ then
     exit 1
 fi
 
+# Drop a custom master config file
+cat << EOF > /etc/salt/master.d/99-freshsalt-pillarloc.conf
+pillar_roots:
+  base:
+    - /srv/salt/pillar
+EOF
+
+# Restart the salt-master service
+# shellcheck disable=SC2046
+if [ $(which systemctl) ]
+then
+    ${SUDO} systemctl restart salt-master
+elif [ -f /sbin/service ]
+then
+    ${SUDO} /sbin/service salt-master restart
+elif [ -f /etc/init.d/salt-master ]
+then
+    ${SUDO} /etc/init.d/salt-master restart
+else
+    echo "WARN: Unable to find a command to restart the Salt Master!" > /dev/stderr
+    echo "INFO: Your pillar data will be in the 'wrong' place until the service can be restarted." > /dev/stderr
+    echo "INFO: Continuing anyway..." > /dev/stderr
+    sleep 5
+fi
+
+# Accept the local key
+sleep 10
+salt-key -a "$(cat /etc/salt/minion_id)" -y
+
 # Install git if necessary
 # shellcheck disable=SC2046
 if [ ! $(which git) ]
@@ -125,10 +154,11 @@ fi
 
 # Clone salt-internal to /srv/salt
 # This will prompt the user for credentials
-${SUDO} mkdir -m 755 /srv{,/salt} 2> /dev/null
-cd /srv/salt/
+${SUDO} mkdir -m 755 /srv 2> /dev/null
+cd /srv/
 git clone https://github.com/DecisionLab/salt-internal.git
-${SUDO} chown -R root: .
+mv salt{-internal,}
+${SUDO} chown -R root: salt
 cd -
 
 # Edit these files:
@@ -144,7 +174,7 @@ then
     salt-call state.sls salt.cloud_profiles
     salt-call state.sls salt.cloud_maps
     salt-call state.sls salt.rosters
-    salt-call state.sls salt.cache
+    salt-call state.sls salt.cloud_cache
 fi
 
 # Clean up after yourself
