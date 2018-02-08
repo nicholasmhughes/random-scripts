@@ -1,0 +1,21 @@
+{  
+  "if":{  
+    "allOf":[  
+      {  
+        "source":"action",
+        "equals":"Microsoft.Compute/virtualMachines/write"
+      },
+      {  
+        "field":"location",
+        "in":[  
+          "eastus",
+          "eastus2",
+          "centralus"
+        ]
+      }
+    ]
+  },
+  "then":{  
+    "effect":"deny"
+  }
+}
