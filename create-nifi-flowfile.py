@@ -14,7 +14,7 @@ def createflowfile ( attributes, content ):
 
   attrarray = bytearray()
 
-  for key, val in attrs.items():
+  for key, val in attributes.items():
     if len(key) <= 65535:
       attrarray.extend((len(key)).to_bytes(2, byteorder='big'))
     else:
